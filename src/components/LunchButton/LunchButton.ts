@@ -1,26 +1,37 @@
 import './style.css';
 
+type LunchButtonColor = 'primary' | 'secondary';
+type LunchButtonType = 'submit' | 'reset' | 'button';
+
 interface LunchButtonProps {
   text: string;
-  color: string;
-  type: string;
+  color: LunchButtonColor;
+  type: LunchButtonType;
+  onClick?: () => void;
 }
+class LunchButton extends HTMLButtonElement {
+  constructor(props: LunchButtonProps) {
+    super();
 
-const LUNCH_BUTTON = ({ text, color, type }: LunchButtonProps) => `
-  <button class="button button--${color} text-caption" type="${type}">${text}</button>
-`;
-
-class LunchButton extends HTMLElement {
-  connectedCallback() {
-    this.render();
+    this.createButton(props);
+    if (props.onClick) {
+      this.setEventListener(props);
+    }
   }
 
-  render() {
-    const text = this.getAttribute('text') ?? '';
-    const color = this.getAttribute('color') ?? '';
-    const type = this.getAttribute('type') ?? '';
-    this.innerHTML = LUNCH_BUTTON({ text, color, type });
+  createButton(props: LunchButtonProps) {
+    this.className = `button button--${props.color}  text-caption`;
+    this.type = props.type;
+    this.textContent = props.text;
+  }
+
+  setEventListener(props: LunchButtonProps) {
+    if (props.onClick) {
+      this.addEventListener('click', props.onClick);
+    }
   }
 }
 
-customElements.define('lunch-button', LunchButton);
+customElements.define('lunch-button', LunchButton, { extends: 'button' });
+
+export default LunchButton;

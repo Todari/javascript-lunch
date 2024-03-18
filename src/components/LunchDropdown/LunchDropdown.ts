@@ -1,55 +1,52 @@
 import { CATEGORIES } from '../../constants/categories';
 import { SORTBY } from '../../constants/sortBy';
 
-const LUNCH_DROPDOWN = `
-<select name="dropdown" id="dropdown-filter" class="restaurant-filter">
-</select>`;
+export type LunchDropdownProps = {
+  name: string;
+  id: string;
+  className: string;
+  options: Record<string, string>;
+  defaultValue?: string;
+};
+type DropdownOptionsTable = {
+  [keys: string]: Record<string, string | number>;
+};
 
-const DROPDOWN_OPTION = (value: string) => `
-  <option value=${value === '전체' ? '' : value}>${value}</option>
-`;
+class LunchDropdown extends HTMLSelectElement {
+  DROPDOWN_OPTIONS_TABLE: DropdownOptionsTable = {
+    category: CATEGORIES,
+    sortBy: SORTBY,
+  };
 
-class LunchDropdown extends HTMLElement {
-  connectedCallback() {
-    this.render();
-    this.renderOptions();
+  constructor(props: LunchDropdownProps) {
+    super();
+    const { name, id, className, options, defaultValue } = props;
+    this.name = name;
+    this.id = id;
+    this.classList.add(className);
+    this.createOptions(options, defaultValue);
     this.setEventListener();
   }
 
-  render(): void {
-    this.innerHTML = LUNCH_DROPDOWN;
+  createOptions(options: Record<string, string>, defaultValue?: string) {
+    if (defaultValue) {
+      this.insertAdjacentHTML('beforeend', `<option value=''>${defaultValue}</option>`);
+    }
+    Object.values(options).forEach((value) => {
+      this.insertAdjacentHTML('beforeend', `<option value=${value}>${value}</option>`);
+    });
   }
 
   setEventListener(): void {
-    const select = this.querySelector('select');
-    select?.addEventListener('change', () => {
+    this.addEventListener('change', () => {
       const changeDropdownEvent = new CustomEvent('changeDropdown', {
         bubbles: true,
       });
       this.dispatchEvent(changeDropdownEvent);
     });
   }
-
-  renderOptions(): void {
-    const optionsAttribute = this.getAttribute('options');
-    const optionItems: string[] = [];
-    if (optionsAttribute === 'category') {
-      optionItems.push(DROPDOWN_OPTION('전체'));
-      Object.values(CATEGORIES).forEach((element) => {
-        optionItems.push(DROPDOWN_OPTION(element));
-      });
-    }
-    if (optionsAttribute === 'sortBy') {
-      Object.values(SORTBY).forEach((element) => {
-        optionItems.push(DROPDOWN_OPTION(element));
-      });
-    }
-
-    const options = this.querySelector('.restaurant-filter');
-    if (options) {
-      options.innerHTML = optionItems.join('');
-    }
-  }
 }
 
-customElements.define('lunch-dropdown', LunchDropdown);
+customElements.define('lunch-dropdown', LunchDropdown, { extends: 'select' });
+
+export default LunchDropdown;

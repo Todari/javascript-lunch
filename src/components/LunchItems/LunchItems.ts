@@ -1,49 +1,78 @@
 import './style.css';
-import '../LunchItem/LunchItem';
+import LunchItem from '../LunchItem/LunchItem';
 
 import { RestaurantDataProvider } from '../../domain/index';
 
-import { Category, Restaurant, Restaurants, SortBy } from '../../types/index';
+import { Category, Restaurants, SortBy } from '../../types/index';
+import LunchFallbackScreen from '../LunchFallbackScreen/LunchFallbackScreen';
 
-export interface FilterPropsTypes {
+export interface FilterProps {
   category?: Category;
   sortBy?: SortBy;
+  database?: string;
 }
 
 const LUNCH_ITEMS = `
-<section class="restaurant-list-container">
-  <ul class="restaurant-list">
-  </ul>
-</section>`;
-
-const LUNCH_ITEM = (restaurant: Restaurant) => `
-<lunch-item category="${restaurant.category}" name="${restaurant.name}" distance="${restaurant.distance
-  }" description="${restaurant.description ?? ''}">
-  </lunch-item>`;
-
+  <section class="restaurant-list-container">
+    <ul class="restaurant-list">
+    </ul>
+  </section>
+`;
 class LunchItems extends HTMLElement {
   connectedCallback() {
-    this.render();
-    this.renderItems({});
+    this.render({});
   }
 
-  render(): void {
-    this.innerHTML = LUNCH_ITEMS;
-  }
-
-  renderItems({ category, sortBy }: FilterPropsTypes): void {
-    const itemHTMLs: string[] = [];
-    this.getRestaurants({ category, sortBy }).forEach((restaurant) => {
-      itemHTMLs.push(LUNCH_ITEM(restaurant));
-    });
-    const itemsHTML = this.querySelector('.restaurant-list');
-    if (itemsHTML) {
-      itemsHTML.innerHTML = itemHTMLs.join('');
+  render(props: FilterProps): void {
+    const restaurants = this.getRestaurants(props);
+    if (restaurants.length === 0) {
+      this.renderFallbackScreen(props);
+    } else {
+      this.renderItems(restaurants);
     }
   }
 
-  getRestaurants({ category, sortBy }: FilterPropsTypes): Restaurants {
-    return RestaurantDataProvider.execute({ category, sortBy });
+  renderItems(restaurants: Restaurants): void {
+    this.innerHTML = LUNCH_ITEMS;
+    const container = this.querySelector('.restaurant-list');
+    restaurants.forEach((restaurant) => {
+      container?.insertAdjacentElement('beforeend', new LunchItem(restaurant));
+    });
+  }
+
+  renderFallbackScreen(props: FilterProps) {
+    this.innerHTML = '';
+    if (props.database === 'liked') {
+      this.appendChild(
+        new LunchFallbackScreen({
+          text: '즐겨찾는 음식점이 없어요!',
+        }),
+      );
+    } else {
+      this.appendChild(
+        new LunchFallbackScreen({
+          text: '등록된 음식점이 없어요!',
+          buttonText: '음식점 등록하기',
+          onClick: this.toggleRestaurantRegisterModal.bind(this),
+        }),
+      );
+    }
+  }
+
+  toggleRestaurantRegisterModal() {
+    const toggleRegisterModal = new CustomEvent('toggleRegisterModal', {
+      bubbles: true,
+    });
+    this.dispatchEvent(toggleRegisterModal);
+  }
+
+  resetTab() {
+    const resetFavoriteTab = new CustomEvent('resetFavoriteTab', { bubbles: true });
+    this.dispatchEvent(resetFavoriteTab);
+  }
+
+  getRestaurants(props: FilterProps): Restaurants {
+    return RestaurantDataProvider.getAllRestaurantsByOption(props);
   }
 }
 

@@ -1,23 +1,37 @@
 import './style.css';
 
-import '../LunchDropdown/LunchDropdown';
-import LunchItems from '../LunchItems/LunchItems';
-import { Category, SortBy } from '../../types';
+import LunchDropdown, { LunchDropdownProps } from '../LunchDropdown/LunchDropdown';
+import { CATEGORIES } from '../../constants/categories';
+import { SORTBY } from '../../constants/sortBy';
 
-const LUNCH_ITEM_FILTER = `
-<section class="restaurant-filter-container">
-  <lunch-dropdown options="category"></lunch-dropdown>
-  <lunch-dropdown options="sortBy"></lunch-dropdown>
-</section>`;
+const DROPDOWN_PROPS = [
+  {
+    name: 'category-dropdown',
+    id: 'category-dropdown',
+    className: 'restaurant-filter',
+    options: CATEGORIES,
+    defaultValue: '전체',
+  },
+  {
+    name: 'sortby-dropdown',
+    id: 'sortby-dropdown',
+    className: 'restaurant-filter',
+    options: SORTBY,
+  },
+];
 
 class LunchItemFilter extends HTMLElement {
-  connectedCallback() {
-    this.render();
+  constructor() {
+    super();
+    this.className = 'restaurant-filter-container';
+    this.createDropdowns();
     this.setEventListener();
   }
 
-  render() {
-    this.innerHTML = LUNCH_ITEM_FILTER;
+  createDropdowns() {
+    DROPDOWN_PROPS.forEach((dropdownProps) => {
+      this.createDropdown(dropdownProps);
+    });
   }
 
   setEventListener() {
@@ -26,15 +40,19 @@ class LunchItemFilter extends HTMLElement {
     });
   }
 
+  createDropdown(props: LunchDropdownProps) {
+    this.appendChild(new LunchDropdown(props));
+  }
+
   handleRender() {
-    const dropdowns = this.querySelectorAll('lunch-dropdown');
-    const array: string[] = [];
-    dropdowns.forEach((dropdown) => {
-      const select = dropdown.querySelector('select');
-      array.push(select?.value ?? '');
+    const renderEvent = new CustomEvent('render', { bubbles: true });
+    this.dispatchEvent(renderEvent);
+  }
+
+  resetDropdowns() {
+    this.querySelectorAll('select').forEach((element) => {
+      element.options[0].selected = true;
     });
-    const items = document.querySelector('lunch-items') as LunchItems;
-    items.renderItems({ category: array[0] as Category, sortBy: array[1] as SortBy });
   }
 }
 
